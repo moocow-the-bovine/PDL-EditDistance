@@ -8,7 +8,7 @@ BEGIN { $last_test = 1; $| = 1; print "1..$last_test\n"; }
 END   { print "not ok 1  Can't load module\n" unless $loaded; }
 
 use PDL;
-use PDL::Levenshtein;
+use PDL::EditDistance;
 $loaded = 1;
 print "ok 1\n";
 
