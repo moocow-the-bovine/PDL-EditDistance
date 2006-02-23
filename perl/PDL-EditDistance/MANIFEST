@@ -1,0 +1,10 @@
+ChangeLog
+MANIFEST
+MANIFEST.SKIP
+Makefile.PL
+EditDistance.pd
+README.txt
+t/common.plt
+t/00_basic.t
+t/01_distance.t
+META.yml                                 Module meta-data (added by MakeMaker)
