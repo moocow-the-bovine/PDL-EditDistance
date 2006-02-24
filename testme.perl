@@ -195,7 +195,9 @@ sub test_bestpath {
 sub morphcosts {
   makepdls;
   @costs = edit_costs_static(float,$a->nelem,$b->nelem,0,1,1);
-  $costs[2]->dice_axis(1,which($b1==ord('~'))) .= 100;
+  $costs[0]->dice_axis(1,which($b1==ord('~'))) .= 999;
+  #$costs[1]->dice_axis(1,which($b1==ord('~'))) .= 0;
+  $costs[2]->dice_axis(1,which($b1==ord('~'))) .= 999;
 }
 
 ##---------------------------------------------------------------------
@@ -212,31 +214,68 @@ sub morphtest {
 }
 
 ##---------------------------------------------------------------------
+sub segtest {
+  my ($text,$analysis) = @_;
+  ($s1,$s2) = map { encode('ISO-8859-1',decode('utf8',$_)) } ($text,$analysis);
+  makepdls;
+  morphcosts;
+  do_bestpath;
+
+  our $s1_seg = join('',
+		     map {
+		       ($apath->at($_)>=0
+			? substr($s1,$apath->at($_),1)
+			: ($bpath->at($_) > 0 && substr($s2,$bpath->at($_),1) eq '~'
+			   ? '.'
+			   : ''))
+		     } (0..($pathlen-1)));
+  print "$s1 / $s2 -> $s1_seg\n";
+}
+
+##---------------------------------------------------------------------
 ## show_bestpath: show best path
+
 sub show_bestpath {
   do_bestpath;
 
-  my ($ai,$bi,$pi) = (-1,-1,0);
   my ($as1,$as2) = ('','');
   our $nullchar = ' ' if (!defined($nullchar));
 
+  $as1 = join('',
+	      map {
+		$_ < 0 ? $nullchar : substr($s1,$_,1)
+	      } $apath->slice("0:".($pathlen-1))->list);
+  $as2 = join('',
+	      map {
+		$_ < 0 ? $nullchar : substr($s2,$_,1)
+	      } $bpath->slice("0:".($pathlen-1))->list);
+
+  print "as1=$as1\nas2=$as2\ndst=".$dmat->slice("(-1),(-1)"), "\n";
+}
+show_bestpath;
+
+sub show_bestpath0 {
+  do_bestpath;
+
+  my ($as1,$as2) = ('','');
+  our $nullchar = ' ' if (!defined($nullchar));
+
+  my ($pi);
   foreach $pi (0..($pathlen-1)) {
-    if ($apath->at($pi) > $ai) {
+    if ($apath->at($pi) >= 0) {
       $as1 .= substr($s1,$apath->at($pi),1);
-      $ai   = $apath->at($pi);
     } else {
       $as1 .= $nullchar;
     }
-    if ($bpath->at($pi) > $bi) {
+    if ($bpath->at($pi) >= 0) {
       $as2 .= substr($s2,$bpath->at($pi),1);
-      $bi   = $bpath->at($pi);
     } else {
       $as2 .= $nullchar;
     }
   }
-  print "as1=$as1\nas2=$as2\n";
+  print "as1=$as1\nas2=$as2\ndst=".$dmat->slice("(-1),(-1)"), "\n";
 }
-show_bestpath;
+#show_bestpath0;
 
 ##---------------------------------------------------------------------
 ## DUMMY

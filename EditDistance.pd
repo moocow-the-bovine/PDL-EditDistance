@@ -4,7 +4,7 @@
 ## Header Administrivia
 ##======================================================================
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 pp_setversion($VERSION);
 
 ##------------------------------------------------------
@@ -660,7 +660,9 @@ pp_addpm(<<'EOPM');
 Convenience method.
 Compute best path through alignment matrix $align().
 Stores paths for original input strings $a() and $b() in $apath() and $bpath()
-respectively.  On completion, $pathlen() holds the actual length of the paths.
+respectively.
+Negative values in $apath() and $bpath() indicate insertion/deletion operations.
+On completion, $pathlen() holds the actual length of the paths.
 
 =cut
 
@@ -695,7 +697,7 @@ pp_def('_edit_bestpath',
       $bpath(L=>p) = j-1;
       //
       op = $align(N1=>i,M1=>j);
-      if (op==ALIGN_OP_INSERT1) {
+      if        (op==ALIGN_OP_INSERT1) {
         --i;
       } else if (op==ALIGN_OP_INSERT2) {
         --j;
@@ -717,10 +719,20 @@ pp_def('_edit_bestpath',
      $bpath(L=>p)    = $bpath(L=>endp);
      $bpath(L=>endp) = tmp;
    }
+   //-- now, sanitize the paths
+   for (p=$len(); p > 0; p--) {
+     if ($apath(L=>p) == $apath(L=>p-1)) $apath(L=>p) = -1;
+     if ($bpath(L=>p) == $bpath(L=>p-1)) $bpath(L=>p) = -1;
+   }
 '),
        Doc =>
 q(
 Low-level method.
+Compute best path through alignment matrix $align() from final index ($ifinal,$jfinal).
+Stores paths for (original) input strings $a() and $b() in $apath() and $bpath()
+respectively.
+Negative values in $apath() and $bpath() indicate insertion/deletion operations.
+On completion, $pathlen() holds the actual length of the paths.
 ),
 );
 
