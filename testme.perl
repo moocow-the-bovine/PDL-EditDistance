@@ -231,6 +231,8 @@ sub segtest {
 		     } (0..($pathlen-1)));
   print "$s1 / $s2 -> $s1_seg\n";
 }
+segtest(qw(anfangesgehältern ~anfang~s~gehalt~));
+show_bestpath();
 
 ##---------------------------------------------------------------------
 ## show_bestpath: show best path
@@ -252,7 +254,7 @@ sub show_bestpath {
 
   print "as1=$as1\nas2=$as2\ndst=".$dmat->slice("(-1),(-1)"), "\n";
 }
-show_bestpath;
+show_bestpath();
 
 sub show_bestpath0 {
   do_bestpath;
