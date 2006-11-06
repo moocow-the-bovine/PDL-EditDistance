@@ -16,4 +16,4 @@ blib
 Makefile
 pdl-core
 xs-cookbook
-META.yml
+#META.yml
