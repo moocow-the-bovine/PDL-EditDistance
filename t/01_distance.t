@@ -1,5 +1,5 @@
 # -*- Mode: CPerl -*-
-# t/01_nnz.t: test n nonzeros
+# t/01_distance.t: test n nonzeros
 
 $TEST_DIR = './t';
 #use lib qw(../blib/lib ../blib/arch); $TEST_DIR = '.'; # for debugging
@@ -10,7 +10,7 @@ do "$TEST_DIR/common.plt";
 use PDL;
 use PDL::EditDistance;
 
-BEGIN { plan tests=>21, todo=>[]; }
+BEGIN { plan tests=>23, todo=>[]; }
 
 ##---------------------------------------------------------------------
 ## 1..3: _edit_pdl()
@@ -179,6 +179,21 @@ sub test_bestpath {
   isok("bestpath: bpath: ", all($bpath->slice("0:".($pathlen-1))==$bpath_want) );
 }
 test_bestpath;
+
+##---------------------------------------------------------------------
+## 22..23 test_backtrace: operation backtrace
+sub test_backtrace {
+  makepdls;
+  @costs = (0,1,1);
+  ($dmat,$amat) = edit_align_static($a,$b,@costs);
+  our $ops = edit_backtrace($amat);
+  our $nelem_want = 6;
+  our ($opmatch,$opins1,$opins2,$opsub) = map {$_->sclr} (align_op_match(),align_op_insert1(),align_op_insert2(),align_op_substitute());
+  our $ops_want = pdl [$opmatch, $opsub, $opmatch,$opmatch,$opmatch, $opins2];
+  isok("backtrace: len  : ", $ops->nelem==$nelem_want );
+  isok("backtrace: ops  : ", all($ops==$ops_want));
+}
+test_backtrace;
 
 
 print "\n";
