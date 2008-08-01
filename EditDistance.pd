@@ -56,8 +56,9 @@ PDL::EditDistance - Wagner-Fischer edit distance and alignment for PDLs.
  $op_ins1  = align_op_insert1();    ##-- constant
  $op_ins2  = align_op_insert2();    ##-- constant
  $op_subst = align_op_substitute(); ##-- constant
+
  ($apath,$bpath,$pathlen) = edit_bestpath($align);
- ($opsReversed, $pathlen) = edit_backtrace($align);
+ ($ai,$bi,$ops,$pathlen)  = edit_pathtrace($align);
 
 =cut
 
@@ -646,6 +647,25 @@ pp_def('align_op_substitute',
        Doc => 'Alignment matrix value constant for substitution operations.',
       );
 
+
+pp_add_exported('','align_ops');
+pp_addpm(<<'EOPM');
+=pod
+
+=head2 align_ops
+
+=for sig
+
+  Signature: ([o]ops(4))
+
+Alignment matrix value constants 4-element pdl (match,insert1,insert2,substitute).a
+
+=cut
+
+sub align_ops { return PDL->sequence(PDL::byte(),4); }
+
+EOPM
+
 ##------------------------------------------------------
 ## Alignment: best path
 ##------------------------------------------------------
@@ -745,50 +765,59 @@ On completion, $pathlen() holds the actual length of the paths.
 ## Alignment: operation backtrace
 ##------------------------------------------------------
 ## edit_backtrace() : alignment operation backtrace
-pp_add_exported('','edit_backtrace');
+pp_add_exported('','edit_pathtrace');
 
 pp_addpm(<<'EOPM');
 
 =pod
 
-=head2 edit_backtrace
+=head2 edit_pathtrace
 
 =for sig
 
-  Signature: (align(N+1,M+1); [o]ops(Nops))
+  Signature: ( align(N+1,M+1); [o]ai(L); [o]bi(L); [o]ops(L); [o]$pathlen() )
 
 Convenience method.
-Compute alignment-operation backtrace  through alignment matrix $align() from final index ($ifinal,$jfinal).
-Stores applied operations in forward order
-in the output pdl $ops(), which is implicitly trimmed to the appropriate length.
-Compare to _edit_backtrace(), which stores operations in reverse order and does not implicitly trim its output pdl.
+Compute alignment path backtrace through alignment matrix $align() from final index ($ifinal,$jfinal).
+Stores raw paths for (original) input strings $a() and $b() in $ai() and $bi()
+respectively.
+Unlike edit_bestpath(), null-moves for $ai() and $bi() are not stored here as negative values.
+Returned pdls ($ai,$bi,$ops) are trimmed to the appropriate path length.
 
 =cut
 
-sub edit_backtrace {
-  my ($align,$rops,$len) = @_;
+sub edit_pathtrace {
+  my ($align,$ai,$bi,$ops,$len) = @_;
   $len=pdl(long,$align->dim(0)+$align->dim(1)) if (!defined($len));
-  if (!defined($rops)) { $rops=zeroes(long,$len); }
-  _edit_backtrace($align, $rops, $len, $align->dim(0)-1, $align->dim(1)-1);
-  return $rops->slice(($len->sclr-1).":0");
+  if (!defined($ai)) { $ai=zeroes(long,$len); }
+  else { $ai->reshape($len) if ($ai->nelem < $len); }
+  if (!defined($bi)) { $bi = zeroes(long,$len); }
+  else { $bi->reshape($len) if ($bi->nelem < $len); }
+  if (!defined($ops)) { $ops = zeroes(long,$len); }
+  else { $ops->reshape($len) if ($ops->nelem < $len); }
+  _edit_pathtrace($align, $ai,$bi,$ops,$len, $align->dim(0)-1,$align->dim(1)-1);
+  my $lens = ($len->sclr-1);
+  return ((map { $_->slice("0:$lens") } ($ai,$bi,$ops)), $len);
 }
 
 EOPM
 
 ##------------------------------------------------------
-## _edit_backtrace : get best path as (reverse) op-sequence
-pp_add_exported('','_edit_backtrace');
-pp_def('_edit_backtrace',
-       Pars => ('align(N1,M1); int [o]rops(L); int [o]len();'),
+## _edit_pathlog : trace path
+pp_add_exported('','_edit_pathtrace');
+pp_def('_edit_pathtrace',
+       Pars => ('align(N1,M1); int [o]ai(L); int [o]bi(L); int [o]ops(L); int [o]len();'),
        OtherPars => ('int ifinal; int jfinal'),
        Code =>
 ('
-   int i,j,p;
+   int i,j,p, tmp;
    //-- get reversed path & real path length
-   $len()=0;
-   for (p=0,i=$COMP(ifinal),j=$COMP(jfinal); p < $SIZE(L) && (i>0 || j>0); p++) {
-      char op = $align(N1=>i,M1=>j);
-      $rops(L=>p) = op;
+   $len() = 0;
+   for (p=0, i=$COMP(ifinal),j=$COMP(jfinal); p < $SIZE(L) && (i>0 || j>0); p++) {
+      int op = $align(N1=>i,M1=>j);
+      $ai(L=>p)  = i;
+      $bi(L=>p)  = j;
+      $ops(L=>p) = op;
       switch (op) {
         case ALIGN_OP_INSERT1: --i; break;
         case ALIGN_OP_INSERT2: --j; break;
@@ -798,16 +827,26 @@ pp_def('_edit_backtrace',
       }
    }
    $len() = p;
-   //-- now, sanitize the path(s) by appending -1s
-   for ( ; p < $SIZE(L); p++ ) { $rops(L=>p) = -1; }
+   //-- now reverse the paths
+   for (p=0; p < ($len()+1)/2; p++) {
+     int endp = $len()-p-1;
+     //
+     tmp          = $ai(L=>p);
+     $ai(L=>p)    = $ai(L=>endp);
+     $ai(L=>endp) = tmp;
+     //
+     tmp          = $bi(L=>p);
+     $bi(L=>p)    = $bi(L=>endp);
+     $bi(L=>endp) = tmp;
+     //
+     tmp           = $ops(L=>p);
+     $ops(L=>p)    = $ops(L=>endp);
+     $ops(L=>endp) = tmp;
+   }
 '),
        Doc =>
 q(
-Low-level method.
-Compute alignment-operation backtrace  through alignment matrix $align() from final index ($ifinal,$jfinal).
-Stores applied operations in reverse order in the output pdl $rops().
-Negative values in $rops() indicate null-operations (allocated slots not needed for the backtrace).
-On completion, $len() holds the actual number of operations in $rops().
+
 ),
 );
 
