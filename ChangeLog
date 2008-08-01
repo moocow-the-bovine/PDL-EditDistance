@@ -1,5 +1,5 @@
 v0.03 Wed, 30 Jul 2008 17:07:33 +0200 (moocow)
-	+ fixed doc summary, added edit_backtrace() function for pure-op backtrace
+	+ fixed doc summary, added edit_pathtrace() function for full path backtrace
 
 v0.01 Fri, 17 Feb 2006 14:00:52 +0100 (moocow)
 	+ initial version
