@@ -4,7 +4,7 @@
 ## Header Administrivia
 ##======================================================================
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 pp_setversion($VERSION);
 
 ##------------------------------------------------------
@@ -59,6 +59,11 @@ PDL::EditDistance - Wagner-Fischer edit distance and alignment for PDLs.
 
  ($apath,$bpath,$pathlen) = edit_bestpath($align);
  ($ai,$bi,$ops,$pathlen)  = edit_pathtrace($align);
+
+ ##-------------------------------------------------------------
+ ## Longest Common Subsequence
+ $lcs = edit_lcs($a,$b);
+ ($ai,$bi,$lcslen) = lcs_backtrace($a,$b,$lcs);
 
 =cut
 
@@ -763,10 +768,10 @@ On completion, $pathlen() holds the actual length of the paths.
 
 ##------------------------------------------------------
 ## Alignment: operation backtrace
+
 ##------------------------------------------------------
 ## edit_backtrace() : alignment operation backtrace
 pp_add_exported('','edit_pathtrace');
-
 pp_addpm(<<'EOPM');
 
 =pod
@@ -846,7 +851,168 @@ pp_def('_edit_pathtrace',
 '),
        Doc =>
 q(
+Low-level method.
+Compute alignment path backtrace through alignment matrix $align() from final index ($ifinal,$jfinal).
+Stores raw paths for (original) input strings $a() and $b() in $ai() and $bi()
+respectively.
+Unlike edit_bestpath(), null-moves for $ai() and $bi() are not stored here as negative values.
+Returned pdls ($ai,$bi,$ops) are trimmed to the appropriate path length.
+),
+);
 
+##======================================================================
+## Longest Common Subsequence (LCS)
+
+##------------------------------------------------------
+## edit_lcs() : lcs matrix (convenience)
+pp_add_exported('','edit_lcs');
+pp_addpm(<<'EOPM');
+
+=pod
+
+=head2 edit_lcs
+
+=for sig
+
+  Signature: (a(N); b(M); int [o]lcs(N+1,M+1);)
+
+Convenience method.
+Compute the longest common subsequence (LCS) matrix for input PDLs $a1() and $b1().
+The output matrix $lcs() contains at cell ($i+1,$j+1) the length of the LCS
+between $a1(0..$i) and $b1(0..$j); thus $lcs($N,$M) contains the
+length of the LCS between $a() and $b().
+
+=cut
+
+sub edit_lcs {
+  return _edit_lcs(_edit_pdl($_[0]), _edit_pdl($_[1]), @_[2..$#_]);
+}
+
+EOPM
+
+##------------------------------------------------------
+## _edit_lcs : get longest common subsequence matrix
+pp_add_exported('','_edit_lcs');
+pp_def('_edit_lcs',
+       Pars => ('a1(N1); b1(M1); int [o]lcs(N1,M1);'),
+       Code =>
+('
+  int i,j, iprev,jprev;
+  //
+  //-- initialize lcs matrix: lcs=0 at borders
+  for (i=0; i < $SIZE(N1); i++) { $lcs(N1=>i,M1=>0) = 0; }
+  for (j=1; j < $SIZE(M1); j++) { $lcs(N1=>0,M1=>j) = 0; }
+  //
+  //-- compute lcs
+  for (i=1,iprev=0; i < $SIZE(N1); i++,iprev++) {
+    for (j=1,jprev=0; j < $SIZE(M1); j++,jprev++) {
+      //
+      if ($a1(N1=>i)==$b1(M1=>j)) {
+        $lcs(N1=>i,M1=>j) = $lcs(N1=>iprev,M1=>jprev)+1;
+      } else {
+        $GENERIC(lcs) lcs_i_jp = $lcs(N1=>i,M1=>jprev);
+        $GENERIC(lcs) lcs_ip_j = $lcs(N1=>iprev,M1=>j);
+        $lcs(N1=>i,M1=>j) = lcs_i_jp > lcs_ip_j ? lcs_i_jp : lcs_ip_j;
+      }
+    }
+  }
+'),
+       Doc =>
+q(
+Low-level method.
+Compute the longest common subsequence (LCS) matrix for input PDLs $a1() and $b1().
+The initial (zeroth) elements of $a1() and $b1() are ignored.
+The output matrix $lcs() contains at cell ($i,$j) the length of the LCS
+between $a1(1..$i) and $b1(1..$j); thus $lcs($N1-1,$M1-1) contains the
+length of the LCS between $a1() and $b1().
+),
+);
+
+##------------------------------------------------------
+## lcs_backtrace : get LCS backtrace (convenience)
+pp_add_exported('','lcs_backtrace');
+pp_addpm(<<'EOPM');
+
+=pod
+
+=head2 lcs_backtrace
+
+=for sig
+
+  Signature: (a(N); b(M); int lcs(N+1,M+1); int ifinal(); int jfinal(); int [o]ai(L); int [o]bi(L); int [o]len())
+
+Convenience method.
+Compute longest-common-subsequence backtrace through LCS matrix $lcs()
+for original input strings ($a(),$b()) from final index ($ifinal,$jfinal).
+Stores raw paths for (original) input strings $a() and $b() in $ai() and $bi()
+respectively.
+
+=cut
+
+sub lcs_backtrace {
+  my ($a,$b,$lcs,$ifinal,$jfinal,$ai,$bi,$len) = @_;
+  $len=pdl(long, pdl(long,$lcs->dims)->min) if (!defined($len));
+  if (!defined($ai)) { $ai=zeroes(long,$len); }
+  else { $ai->reshape($len) if ($ai->nelem < $len); }
+  if (!defined($bi)) { $bi = zeroes(long,$len); }
+  else { $bi->reshape($len) if ($bi->nelem < $len); }
+  if (!defined($ifinal)) { $ifinal = $lcs->dim(0)-1; }
+  if (!defined($jfinal)) { $jfinal = $lcs->dim(1)-1; }
+  _lcs_backtrace(_edit_pdl($a),_edit_pdl($b), $lcs,$ifinal,$jfinal, $ai,$bi,$len);
+  my $lens = ($len->sclr-1);
+  return ($ai->slice("0:$lens"),$bi->slice("0:$lens"), $len);
+}
+
+EOPM
+
+##------------------------------------------------------
+## _lcs_backtrace : get LCS backtrace
+pp_add_exported('','_lcs_backtrace');
+pp_def('_lcs_backtrace',
+       Pars => ('a1(N1); b1(M1); int lcs(N1,M1); int ifinal(); int jfinal(); [o]ai(L); [o]bi(L); int [o]len()'),
+       Code =>
+('
+  int i,j,p, iprev,jprev, tmp;
+  //-- get reversed path & real path length
+  $len() = 0;
+  for (p=0, i=$ifinal(), j=$jfinal(); p < $SIZE(L) && i>0 && j>0; ) {
+    $GENERIC(a1) a1i = $a1(N1=>i);
+    $GENERIC(b1) b1j = $b1(M1=>j);
+    iprev=i-1;
+    jprev=j-1;
+    if (a1i==b1j) {
+      $ai(L=>p) = iprev;
+      $bi(L=>p) = jprev;
+      --i;
+      --j;
+      ++p;
+    } else if ($lcs(N1=>i,M1=>jprev) > $lcs(N1=>iprev,M1=>j)) {
+      --j;
+    } else {
+      --i;
+    }
+  }
+  $len() = p;
+  //-- now reverse the paths
+  for (p=0; p < ($len()+1)/2; p++) {
+    int endp = $len()-p-1;
+    //
+    tmp          = $ai(L=>p);
+    $ai(L=>p)    = $ai(L=>endp);
+    $ai(L=>endp) = tmp;
+    //
+    tmp          = $bi(L=>p);
+    $bi(L=>p)    = $bi(L=>endp);
+    $bi(L=>endp) = tmp;
+  }
+'),
+       Doc =>
+q(
+Low-level method.
+Compute longest-common-subsequence backtrace through LCS matrix $lcs()
+for initial-padded strings ($a1(),$b1()) from final index ($ifinal,$jfinal).
+Stores raw paths for (original) input strings $a() and $b() in $ai() and $bi()
+respectively.
 ),
 );
 

@@ -10,7 +10,7 @@ do "$TEST_DIR/common.plt";
 use PDL;
 use PDL::EditDistance;
 
-BEGIN { plan tests=>25, todo=>[]; }
+BEGIN { plan tests=>29, todo=>[]; }
 
 ##---------------------------------------------------------------------
 ## 1..3: _edit_pdl()
@@ -198,6 +198,28 @@ sub test_pathtrace {
 }
 test_pathtrace;
 
+##---------------------------------------------------------------------
+## 26..29 test_lcs: test LCS
+sub test_lcs {
+  my $a = pdl(long,[0,1,2,3,4]);
+  my $b = pdl(long,[  1,2,1,4,0]);
+  my $lcs = edit_lcs($a,$b);
+  my ($ai,$bi,$len) = lcs_backtrace($a,$b,$lcs);
+  my $lcs_want = pdl(long, [[0,0,0,0,0,0],
+			    [0,0,1,1,1,1],
+			    [0,0,1,2,2,2],
+			    [0,0,1,2,2,2],
+			    [0,0,1,2,2,3],
+			    [0,1,1,2,2,3]]);
+  my $ai_want = pdl(long,[1,2,4]);
+  my $bi_want = pdl(long,[0,1,3]);
+  my $len_want = 3;
+  isok("lcs: matrix : ", ($lcs==$lcs_want)->all);
+  isok("lcs: len    : ", $len==$len_want);
+  isok("lcs: ai     : ", ($ai==$ai_want)->all);
+  isok("lcs: bi     : ", ($bi==$bi_want)->all);
+}
+test_lcs();
 
 print "\n";
 # end of t/01_distance.t
