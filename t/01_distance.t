@@ -1,5 +1,5 @@
 # -*- Mode: CPerl -*-
-# t/01_distance.t: test n nonzeros
+# t/01_distance.t: test edit distance
 
 $TEST_DIR = './t';
 #use lib qw(../blib/lib ../blib/arch); $TEST_DIR = '.'; # for debugging
@@ -10,7 +10,7 @@ do "$TEST_DIR/common.plt";
 use PDL;
 use PDL::EditDistance;
 
-BEGIN { plan tests=>23, todo=>[]; }
+BEGIN { plan tests=>29, todo=>[]; }
 
 ##---------------------------------------------------------------------
 ## 1..3: _edit_pdl()
@@ -181,20 +181,45 @@ sub test_bestpath {
 test_bestpath;
 
 ##---------------------------------------------------------------------
-## 22..23 test_backtrace: operation backtrace
-sub test_backtrace {
+## 22..25 test_pathtrace: full path backtrace
+sub test_pathtrace {
   makepdls;
   @costs = (0,1,1);
   ($dmat,$amat) = edit_align_static($a,$b,@costs);
-  our $ops = edit_backtrace($amat);
-  our $nelem_want = 6;
-  our ($opmatch,$opins1,$opins2,$opsub) = map {$_->sclr} (align_op_match(),align_op_insert1(),align_op_insert2(),align_op_substitute());
-  our $ops_want = pdl [$opmatch, $opsub, $opmatch,$opmatch,$opmatch, $opins2];
-  isok("backtrace: len  : ", $ops->nelem==$nelem_want );
-  isok("backtrace: ops  : ", all($ops==$ops_want));
+  our ($ai,$bi,$ops,$len) = edit_pathtrace($amat);
+  our $len_want = 6;
+  our $ai_want  = pdl [1,2,3,4,5,5];
+  our $bi_want  = pdl [1,2,3,4,5,6];
+  our $ops_want = pdl [0,3,0,0,0,2]; ##-- match, subst, match, match, match, insert2
+  isok("pathtrace: len : ", $len==$len_want );
+  isok("pathtrace:  ai : ", all($ops==$ops_want));
+  isok("pathtrace:  bi : ", all($ops==$ops_want));
+  isok("pathtrace: ops : ", all($ops==$ops_want));
 }
-test_backtrace;
+test_pathtrace;
 
+##---------------------------------------------------------------------
+## 26..29 test_lcs: test LCS
+sub test_lcs {
+  my $a = pdl(long,[0,1,2,3,4]);
+  my $b = pdl(long,[  1,2,1,4,0]);
+  my $lcs = edit_lcs($a,$b);
+  my ($ai,$bi,$len) = lcs_backtrace($a,$b,$lcs);
+  my $lcs_want = pdl(long, [[0,0,0,0,0,0],
+			    [0,0,1,1,1,1],
+			    [0,0,1,2,2,2],
+			    [0,0,1,2,2,2],
+			    [0,0,1,2,2,3],
+			    [0,1,1,2,2,3]]);
+  my $ai_want = pdl(long,[1,2,4]);
+  my $bi_want = pdl(long,[0,1,3]);
+  my $len_want = 3;
+  isok("lcs: matrix : ", ($lcs==$lcs_want)->all);
+  isok("lcs: len    : ", $len==$len_want);
+  isok("lcs: ai     : ", ($ai==$ai_want)->all);
+  isok("lcs: bi     : ", ($bi==$bi_want)->all);
+}
+test_lcs();
 
 print "\n";
 # end of t/01_distance.t

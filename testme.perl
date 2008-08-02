@@ -191,6 +191,16 @@ sub test_bestpath {
 #test_bestpath;
 
 ##---------------------------------------------------------------------
+## test_lcs: test: lcs
+
+sub test_lcs {
+  makepdls;
+  my $lcs = edit_lcs($a,$b);
+  my ($ai,$bi,$len) = lcs_backtrace($a,$b,$lcs);
+}
+test_lcs();
+
+##---------------------------------------------------------------------
 ## morphcosts: get morph costs
 sub morphcosts {
   makepdls;
@@ -231,8 +241,8 @@ sub segtest {
 		     } (0..($pathlen-1)));
   print "$s1 / $s2 -> $s1_seg\n";
 }
-segtest(qw(anfangesgehältern ~anfang~s~gehalt~));
-show_bestpath();
+#segtest(qw(anfangesgehältern ~anfang~s~gehalt~));
+#show_bestpath();
 
 ##---------------------------------------------------------------------
 ## show_bestpath: show best path
@@ -254,7 +264,7 @@ sub show_bestpath {
 
   print "as1=$as1\nas2=$as2\ndst=".$dmat->slice("(-1),(-1)"), "\n";
 }
-show_bestpath();
+#show_bestpath();
 
 sub show_bestpath0 {
   do_bestpath;
