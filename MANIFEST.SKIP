@@ -1,3 +1,5 @@
+\.svn
+\.gz$
 ~$
 \.bs$
 \.o$
@@ -14,7 +16,7 @@
 ^EditDistance.pm$
 ^EditDistance.xs$
 ^EditDistance.c$
-^README\.pod$
+^README\.(?:r?)pod$
 \.html$
 \.tmp$
 ^#Makefile#$

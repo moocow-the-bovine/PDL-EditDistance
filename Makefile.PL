@@ -46,7 +46,13 @@ sub MY::special_targets {
 .pod.html:
 \tpod2html --outfile \$@ \$<
 
-.pod.txt: README.pod
+.pod.txt:
+\tpod2text \$< \$@
+
+.rpod.html:
+\tpod2html --outfile \$@ \$<
+
+.rpod.txt:
 \tpod2text \$< \$@
 
 #README.html: README.pod
