@@ -1,3 +1,6 @@
+v0.05 Mon, 02 Jan 2012 13:29:34 +0100 moocow
+	+ cpan-friendly distribution with pdlmaker.plm
+
 v0.04 Sun, 03 Aug 2008 00:38:56 +0200
 	+ added LCS (longest common subsequence) matrix, backtrace
 

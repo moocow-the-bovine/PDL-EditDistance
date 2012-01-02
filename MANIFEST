@@ -1,10 +1,12 @@
 ChangeLog
-EditDistance.pd
 Makefile.PL
+pdlmaker.plm
 MANIFEST
 MANIFEST.SKIP
-META.yml			Module meta-data (added by MakeMaker)
 README.txt
+EditDistance.pd			# EditDistance.pm
+EditDistance.pm
 t/00_basic.t
 t/01_distance.t
 t/common.plt
+META.yml			Module meta-data (added by MakeMaker)

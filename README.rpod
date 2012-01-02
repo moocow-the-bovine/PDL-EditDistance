@@ -12,7 +12,7 @@ PDL::EditDistance - Wagner-Fischer edit distance and alignment for PDLs.
 
 =item * PDL
 
-Tested version 2.4.2.
+Tested version(s) 2.4.2, 2.4.3, 2.4.7_001, 2.4.9_015.
 
 =back
 
