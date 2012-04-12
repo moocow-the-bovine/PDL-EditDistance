@@ -16,7 +16,7 @@ BEGIN { plan tests=>29, todo=>[]; }
 ## 1..3: _edit_pdl()
 sub test_edit_pdl {
   our $s = 'ABC';
-  our $l = [map { ord($_) } split(//,$s)];
+  our $l = [unpack('C*',$s)];
   our $p = pdl(byte,$l);
   our $s_pdl = PDL::EditDistance::_edit_pdl($s);
   our $l_pdl = PDL::EditDistance::_edit_pdl($l);
@@ -32,8 +32,8 @@ test_edit_pdl();
 ## util: makepdls
 sub makepdls {
   ($s1,$s2) = ('GUMBO','GAMBOL');
-  our $a = pdl(byte,[map { ord($_) } split(//,$s1)]);
-  our $b = pdl(byte,[map { ord($_) } split(//,$s2)]);
+  our $a = pdl(byte,[unpack('C*',$s1)]);
+  our $b = pdl(byte,[unpack('C*',$s2)]);
   our $a1 = $a->flat->reshape($a->nelem+1)->rotate(1);
   our $b1 = $b->flat->reshape($b->nelem+1)->rotate(1);
 }
