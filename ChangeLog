@@ -1,4 +1,4 @@
-v0.05003 Tue, 24 Sep 2013 10:41:48 +0200 moocow
+v0.05002 Tue, 24 Sep 2013 10:41:48 +0200 moocow
 	+ use CONFIGURE_REQUIRES{PDL}, PREREQ_PM{PDL}=>0 (fixes RT #88876)
 
 v0.05001 2012-04-12  moocow
