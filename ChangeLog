@@ -1,3 +1,10 @@
+v0.05002 Tue, 24 Sep 2013 10:41:48 +0200 moocow
+	+ use CONFIGURE_REQUIRES{PDL}, PREREQ_PM{PDL}=>0 (fixes RT #88876)
+
+v0.05001 2012-04-12  moocow
+	+ use unpack('C*') instead of map{ord(--color=tty)}split(//) in tests
+	+ use pdlmaker in Makefile.PL
+
 v0.05 Mon, 02 Jan 2012 13:29:34 +0100 moocow
 	+ cpan-friendly distribution with pdlmaker.plm
 

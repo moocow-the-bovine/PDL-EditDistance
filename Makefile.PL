@@ -8,7 +8,7 @@ $package = ["EditDistance.pd",EditDistance,PDL::EditDistance];
 
 $hash{AUTHOR} = 'Bryan Jurish';
 $hash{ABSTRACT} = 'Compute Wagner-Fischer edit distance and alignment matrices on PDLs';
-$hash{PREREQ_PM}{PDL} = '2.4.2'; ##-- ensure PDL-ability
+$hash{PREREQ_PM}{PDL} = $hash{CONFIGURE_REQUIRES}{PDL} = 0;
 push(@{$hash{LIBS}}, '-lm');
 #$hash{INC} .= '';
 $hash{DIR} = [];
