@@ -34,8 +34,15 @@ sub makepdls {
   ($s1,$s2) = ('GUMBO','GAMBOL');
   our $a = pdl(byte,[unpack('C*',$s1)]);
   our $b = pdl(byte,[unpack('C*',$s2)]);
-  our $a1 = $a->flat->reshape($a->nelem+1)->rotate(1);
-  our $b1 = $b->flat->reshape($b->nelem+1)->rotate(1);
+
+  ##-- the following makes some combinations of perl + pdl choke later on; cf RT #76461, #76577
+  ##   - it *ought* to work, but it's not our place to test it here
+  #our $a1 = $a->flat->reshape($a->nelem+1)->rotate(1);
+  #our $b1 = $b->flat->reshape($b->nelem+1)->rotate(1);
+
+  ##-- ... instead, we can create the buggers here this way (less thread-able):
+  our $a1 = zeroes(byte,1)->append($a);
+  our $b1 = zeroes(byte,1)->append($b);
 }
 
 

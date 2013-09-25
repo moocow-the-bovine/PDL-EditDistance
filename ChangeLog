@@ -1,3 +1,7 @@
+v0.05003 Wed, 25 Sep 2013 09:30:08 +0200 moocow
+	+ tweaked t/01_distance.t to avoid RT #76461 ('Error in _edit_distance_full:Wrong dims')
+	  on some combinations of perl+PDL (notably perl-5.16.0 + PDL-2.4.10)
+
 v0.05002 Tue, 24 Sep 2013 10:41:48 +0200 moocow
 	+ use CONFIGURE_REQUIRES{PDL}, PREREQ_PM{PDL}=>0 (fixes RT #88876)
 
