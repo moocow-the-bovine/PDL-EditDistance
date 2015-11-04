@@ -10,10 +10,10 @@ do "$TEST_DIR/common.plt";
 use PDL;
 use PDL::EditDistance;
 
-BEGIN { plan tests=>29, todo=>[]; }
+BEGIN { plan tests=>31, todo=>[]; }
 
 ##---------------------------------------------------------------------
-## 1..3: _edit_pdl()
+## 1..4: _edit_pdl()
 sub test_edit_pdl {
   our $s = 'ABC';
   our $l = [unpack('C*',$s)];
@@ -22,9 +22,15 @@ sub test_edit_pdl {
   our $l_pdl = PDL::EditDistance::_edit_pdl($l);
   our $p_pdl = PDL::EditDistance::_edit_pdl($p);
   our $pdl_want = pdl [0,65,66,67];
-  isok("_edit_pdl(string) : ", all($s_pdl==$pdl_want));
-  isok("_edit_pdl(array ) : ", all($l_pdl==$pdl_want));
   isok("_edit_pdl(pdl   ) : ", all($p_pdl==$pdl_want));
+  isok("_edit_pdl(array ) : ", all($l_pdl==$pdl_want));
+  isok("_edit_pdl(string) : ", all($s_pdl==$pdl_want));
+  ##
+  our $us = "\x{166}\x{20ac}\x{17f}\x{167}";  ##-- Ŧ€ſŧ
+  utf8::upgrade($us) if (!utf8::is_utf8($us));
+  our $us_pdl = PDL::EditDistance::_edit_pdl($us);
+  our $updl_want = pdl [0,0x166,0x20ac,0x17f,0x167];
+  isok("_edit_pdl(utf-8 string) : ", all($us_pdl==$updl_want));
 }
 test_edit_pdl();
 
@@ -47,25 +53,27 @@ sub makepdls {
 
 
 ##---------------------------------------------------------------------
-## 4..6: edit_costs_static()
+## 5..8: edit_costs_static()
 sub test_edit_costs_static {
   makepdls;
-  our ($costsMatch,$costsIns,$costsSubst) = edit_costs_static(long,$a->nelem,$b->nelem, 0,1,2);
+  our ($costsMatch,$costsIns,$costsDel,$costsSubst) = edit_costs_static(long,$a->nelem,$b->nelem, 0,1,1,2);
   $costsMatch_want = zeroes(byte,$a->nelem+1,$b->nelem+1);
   $costsIns_want   = zeroes(byte,$a->nelem+1,$b->nelem+1) +1;
+  $costsDel_want   = $costsIns_want;
   $costsSubst_want = zeroes(byte,$a->nelem+1,$b->nelem+1) +2;
   isok("costs_static: match: ", all($costsMatch==$costsMatch_want));
   isok("costs_static:   ins: ", all($costsIns==$costsIns_want)    );
+  isok("costs_static:   del: ", all($costsDel==$costsDel_want)    );
   isok("costs_static: subst: ", all($costsSubst==$costsSubst_want));
 }
 test_edit_costs_static();
 
 
 ##---------------------------------------------------------------------
-## 7..8: test_distance_full: distance matrix full
+## 9..10: test_distance_full: distance matrix full
 sub test_distance_full {
   makepdls;
-  our @costs   =  edit_costs_static(double, $a->nelem,$b->nelem, 0,1,1);
+  our @costs   =  edit_costs_static(double, $a->nelem,$b->nelem, 0,1,1,1);
   our $dmat    = _edit_distance_full($a1,$b1,@costs);
   our $dmat2   =  edit_distance_full($a,$b,@costs);
   our $dmat_want = pdl([
@@ -83,10 +91,10 @@ sub test_distance_full {
 test_distance_full;
 
 ##---------------------------------------------------------------------
-## 9..10: test_distance_static: distance matrix, static
+## 11..12: test_distance_static: distance matrix, static
 sub test_distance_static {
   makepdls;
-  @costs   = map { pdl(double,$_) } (0,1,1);
+  @costs   = map { pdl(double,$_) } (0,1,1,1);
   $dmat    = _edit_distance_static($a1,$b1,@costs);
   $dmat2   =  edit_distance_static($a,$b,@costs);
   our $dmat_want = pdl([
@@ -105,10 +113,10 @@ test_distance_static;
 
 
 ##---------------------------------------------------------------------
-## 11..14: test_align: alignment matrix
+## 13..16: test_align: alignment matrix
 sub test_align_full {
   makepdls;
-  our @costs = edit_costs_static(double, $a->nelem,$b->nelem, 0,1,1);
+  our @costs = edit_costs_static(double, $a->nelem,$b->nelem, 0,1,1,1);
   our ($dmat,$amat)  = _edit_align_full($a1,$b1,@costs);
   our ($dmat2,$amat2) =  edit_align_full($a,$b,@costs);
   our $dmat_want = pdl([
@@ -139,10 +147,10 @@ test_align_full;
 
 
 ##---------------------------------------------------------------------
-## 15..18: test_align_static: alignment matrix, static
+## 17..20: test_align_static: alignment matrix, static
 sub test_align_static {
   makepdls;
-  our @costs = (0,1,1);
+  our @costs = (0,1,1,1);
   our ($dmat,$amat)   = _edit_align_static($a1,$b1,@costs);
   our ($dmat2,$amat2) =  edit_align_static($a,$b,@costs);
   our $dmat_want = pdl([
@@ -172,10 +180,10 @@ sub test_align_static {
 test_align_static;
 
 ##---------------------------------------------------------------------
-## 19..21 test_bestpath: best path
+## 21..23 test_bestpath: best path
 sub test_bestpath {
   makepdls;
-  @costs = (0,1,1);
+  @costs = (0,1,1,1);
   ($dmat,$amat) = edit_align_static($a,$b,@costs);
   our ($apath,$bpath,$pathlen) = edit_bestpath($amat);
   our $pathlen_want = 6;
@@ -188,10 +196,10 @@ sub test_bestpath {
 test_bestpath;
 
 ##---------------------------------------------------------------------
-## 22..25 test_pathtrace: full path backtrace
+## 24..27 test_pathtrace: full path backtrace
 sub test_pathtrace {
   makepdls;
-  @costs = (0,1,1);
+  @costs = (0,1,1,1);
   ($dmat,$amat) = edit_align_static($a,$b,@costs);
   our ($ai,$bi,$ops,$len) = edit_pathtrace($amat);
   our $len_want = 6;
@@ -206,7 +214,7 @@ sub test_pathtrace {
 test_pathtrace;
 
 ##---------------------------------------------------------------------
-## 26..29 test_lcs: test LCS
+## 28..31 test_lcs: test LCS
 sub test_lcs {
   my $a = pdl(long,[0,1,2,3,4]);
   my $b = pdl(long,[  1,2,1,4,0]);

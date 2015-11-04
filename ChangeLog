@@ -1,3 +1,11 @@
+v0.07 Wed, 04 Nov 2015 10:29:49 +0100 moocow
+	+ avoid in-place reshaping in _edit_pdl() for PDL >= v2.014 (fixes RT bug #107829)
+	+ added support for UTF-8 strings via unpack('C0C*',...) in _edit_pdl()
+	+ changed _edit_pdl() handling of byte-strings to unpack('U0C*',...) rather than map {ord($_)} split(//,...)
+
+v0.06 Tue, 17 Jun 2014 14:10:45 +0200 moocow
+	+ added additional delete-costs, separate and independent from insert-costs: BREAKS OLD API
+
 v0.05003 Wed, 25 Sep 2013 09:30:08 +0200 moocow
 	+ tweaked t/01_distance.t to avoid RT #76461 ('Error in _edit_distance_full:Wrong dims')
 	  on some combinations of perl+PDL (notably perl-5.16.0 + PDL-2.4.10)
