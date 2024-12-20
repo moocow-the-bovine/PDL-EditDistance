@@ -1,1 +1,2 @@
-svntags=$(svnroot.sh . | perl -pe 's{\btrunk.*$}{tags/PDL-EditDistance};')
+#svntags=$(svnroot.sh . | perl -pe 's{\btrunk.*$}{tags/PDL-EditDistance};')
+scm=git
